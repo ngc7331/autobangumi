@@ -180,4 +180,9 @@ if __name__ == "__main__":
     if args.hash == "all":
         worker.handle_all(args.force)
     else:
-        worker.handle(args.hash, args.force)
+        try:
+            worker.handle(args.hash, args.force)
+        except NotImplementedError as e:
+            print(f"Skipped: {e}")
+        except ValueError as e:
+            print(f"Skipped: {e}")

@@ -93,7 +93,13 @@ class Worker(QBWorker):
 
     def handle(self, torrent: str | TorrentDictionary, force: bool = False) -> None:
         if isinstance(torrent, str):
-            torrent = self._client.torrents_info(torrent_hashes=torrent)[0]
+            torrent = self._client.torrents_info(
+                torrent_hashes=torrent,
+                **self._config.torrent_filter,
+            )
+            if len(torrent) != 1:
+                raise ValueError(f"Failed to find torrent")
+            torrent = torrent[0]
 
         assert torrent["progress"] == 1.0
 

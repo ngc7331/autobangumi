@@ -65,3 +65,12 @@ class Bangumi:
             return first(name)
         except ValueError:
             return second(name)
+
+    def filename(self, with_season: bool = False) -> str:
+        season_s = f" S{self.season:02d}" if with_season else ""
+        if self.type == "multi":
+            return f"[{'&'.join(self.groups)}] {self.name}{season_s} [{' '.join(self.meta)}]"
+        elif self.type == "single":
+            return f"[{'&'.join(self.groups)}] {self.name}{season_s} - {self.episode:02d} [{' '.join(self.meta)}].{self.ext}"
+        else:
+            raise ValueError("Invalid type")

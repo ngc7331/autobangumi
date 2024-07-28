@@ -37,6 +37,8 @@ class Bangumi:
             re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? - (\d+)(?:v(\d+))? \[(.*)\]\.(.*)"),
             # [group] name [episode][meta].ext
             re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? \[(\d+)(?:v(\d+))?\]\[(.*)\]\.(.*)"),
+            # [group] name 第episode話 (meta).ext
+            re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? 第(\d+)[話话集](?:v(\d+))? \((.*)\)\.(.*)"),
         ]:
             match = pattern.match(name)
             if match:

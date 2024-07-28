@@ -75,13 +75,11 @@ class Worker(QBWorker):
         )
 
     def show(self):
-        print("RSS Rules:")
-        for name, rule in self._client.rss_rules().items():
-            print(f"{name}: {rule}")
+        # print("RSS Rules:")
+        # for name, rule in self._client.rss_rules().items():
+        #     print(f"{name}: {rule}")
 
-        # print("Torrents:")
-        # for torrent in self._client.torrents_info():
-        #     print(f"{torrent['name']}: {torrent['seeding_time_limit']}")
+
 
 
 parser = argparse.ArgumentParser()

@@ -21,6 +21,7 @@ class Config(QBConfig):
         "ongoing": "连载",
     })
     library: str = "/jellyfin/anime"
+    local_mode: bool = True  # is running on same host(container) with qbittorrent
 
 
 class Worker(QBWorker):
@@ -28,7 +29,7 @@ class Worker(QBWorker):
         super().__init__(config)
         self._config = config
 
-    def handle(self, torrent: str | TorrentDictionary, force: bool = False) -> None:
+    def handle(self, torrent: str | TorrentDictionary, force: bool = False, do_jellyfin_stds: bool = False) -> None:
         if isinstance(torrent, str):
             torrent = self._client.torrents_info(
                 torrent_hashes=torrent,
@@ -66,6 +67,10 @@ class Worker(QBWorker):
                 old_path=torrent["name"],
                 new_path=f"S{bangumi.season:02d}",
             )
+
+            if do_jellyfin_stds:
+                self.jellyfin_stds(torrent)
+
         else:
             print(f"... match: '{bangumi.name}' S{bangumi.season:02d}E{bangumi.episode:02d}")
             torrent.set_location(os.path.join(
@@ -84,6 +89,46 @@ class Worker(QBWorker):
                 print(f"Skipped: {e}")
             except ValueError as e:
                 print(f"Skipped: {e}")
+
+    def jellyfin_stds(self, torrent: str | TorrentDictionary) -> None:
+        if isinstance(torrent, str):
+            torrent = self._client.torrents_info(
+                torrent_hashes=torrent,
+                **self._config.torrent_filter,
+            )
+            if len(torrent) != 1:
+                raise ValueError(f"Failed to find torrent")
+            torrent = torrent[0]
+
+        assert torrent["progress"] == 1.0
+
+        # rename files & add .ignore
+        for file in torrent.files:
+            path_s = file["name"]
+            path = path_s.split("/")
+            match len(path):
+                case 2:
+                    try:
+                        episode = Bangumi.parse_single(path[1])
+                    except ValueError:
+                        continue
+                    new_path = os.path.join(path[0], episode.filename())
+                    if path_s != new_path:
+                        print(f"... rename: {path_s} -> {new_path}")
+                        torrent.rename_file(
+                            old_path=path_s,
+                            new_path=new_path,
+                        )
+                case 3:
+                    if not self._config.local_mode:
+                        continue
+                    # add .ignore file to subfolder
+                    path = os.path.join(torrent["save_path"], path[0], path[1])
+                    print(f"... add .ignore to {path}")
+                    with open(os.path.join(path, ".ignore"), "w") as f:
+                        pass
+                case _:
+                    pass
 
     def set_rss_tag(self) -> None:
         for (name, rule) in self._client.rss_rules().items():

@@ -1,12 +1,21 @@
 import argparse
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Tuple
 
 from module.qbittorrent import QBConfig, QBWorker
 
 
 @dataclass
 class Config(QBConfig):
+    @dataclass
+    class SeedingLimit:
+        ratio: float
+        time: int
+        inactive_time: int
+        class Constant:
+            DISABLED = -1.0
+            GLOBAL = -2.0
+
     tag_mapping: Dict[str, str] = field(default_factory = lambda: {
         "todo": "RSS",
         "ongoing": "连载",
@@ -14,6 +23,17 @@ class Config(QBConfig):
     })
     completed_keyword: str = "TV"
     category: str = "动漫"
+    stopped: bool = False
+    seeding_limit_pt: SeedingLimit = field(default_factory = lambda: Config.SeedingLimit(
+        ratio = Config.SeedingLimit.Constant.GLOBAL,
+        time = Config.SeedingLimit.Constant.GLOBAL,
+        inactive_time = Config.SeedingLimit.Constant.GLOBAL,
+    ))
+    seeding_limit_bt: SeedingLimit = field(default_factory = lambda: Config.SeedingLimit(
+        ratio = 2.0,
+        time = 10080,
+        inactive_time = 10080,
+    ))
 
 class Worker(QBWorker):
     def __init__(self, config: Config):
@@ -28,6 +48,8 @@ class Worker(QBWorker):
         source = rss_items[int(input("Source: "))][1]["url"]
         keyword = input("Keyword(regex): ")
         bt = input("BT(y/N): ").lower() in ["y", "yes"]
+
+        seeding_limit = self._config.seeding_limit_bt if bt else self._config.seeding_limit_pt
 
         self._client.rss_set_rule(
             rule_name=name,
@@ -44,6 +66,10 @@ class Worker(QBWorker):
                         self._config.tag_mapping["ongoing"],
                         self._config.tag_mapping["todo"],
                     ] + ([self._config.tag_mapping["bt"]] if bt else []),
+                    "stopped": self._config.stopped,
+                    "ratio_limit": seeding_limit.ratio,
+                    "seeding_time_limit": seeding_limit.time,
+                    "inactive_seeding_time_limit": seeding_limit.inactive_time,
                 },
             },
         )
@@ -53,6 +79,9 @@ class Worker(QBWorker):
         for name, rule in self._client.rss_rules().items():
             print(f"{name}: {rule}")
 
+        # print("Torrents:")
+        # for torrent in self._client.torrents_info():
+        #     print(f"{torrent['name']}: {torrent['seeding_time_limit']}")
 
 
 parser = argparse.ArgumentParser()

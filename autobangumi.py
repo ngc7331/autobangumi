@@ -37,7 +37,7 @@ class Bangumi:
     def parse_multi(name: str) -> "Bangumi":
         for pattern in [
             # [group] name [episodes][meta]
-            re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? ?(?:\[(?:\d+)-(?:\d+)(?: ?[Ff][Ii][Nn])(?:\+SP)??\])?\[(.*?)\]"),
+            re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? ?(?:\[(?:\d+)-(?:\d+)(?: ?[Ff][Ii][Nn])(?:\+SP)??\])?\[(.*)\]"),
         ]:
             match = pattern.match(name)
             if match:
@@ -46,7 +46,7 @@ class Bangumi:
                     groups=match.group(1).split("&"),
                     name=match.group(2),
                     season=1 if match.group(3) is None else int(match.group(3)),
-                    meta=match.group(4).split(),
+                    meta=match.group(4).replace("][", " ").split(),
                 )
         raise ValueError(f"Failed to match name: {name}")
 
@@ -54,9 +54,9 @@ class Bangumi:
     def parse_single(name: str) -> "Bangumi":
         for pattern in [
             # [group] name - episode [meta].ext
-            re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? - (\d+)(?:v(\d+))? \[(.*?)\]\.(.*)"),
+            re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? - (\d+)(?:v(\d+))? \[(.*)\]\.(.*)"),
             # [group] name [episode][meta].ext
-            re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? \[(\d+)(?:v(\d+))?\]\[(.*?)\]\.(.*)"),
+            re.compile(r"\[(.*?)\] (.*?)(?: (?:S(?:eason ?)?)?(\d+))? \[(\d+)(?:v(\d+))?\]\[(.*)\]\.(.*)"),
         ]:
             match = pattern.match(name)
             if match:
@@ -67,7 +67,7 @@ class Bangumi:
                     season=1 if match.group(3) is None else int(match.group(3)),
                     episode=int(match.group(4)),
                     version=1 if match.group(5) is None else int(match.group(5)),
-                    meta=match.group(6).split(),
+                    meta=match.group(6).replace("][", " ").split(),
                     ext=match.group(7),
                 )
         raise ValueError(f"Failed to match name: {name}")
